@@ -1,5 +1,6 @@
 package com.pjf.core.service.product;
 
+import com.pjf.core.bean.product.Color;
 import com.pjf.core.bean.product.Sku;
 import com.pjf.core.bean.product.SkuQuery;
 import com.pjf.core.dao.product.ColorDao;
@@ -35,6 +36,21 @@ public class SkuServiceImpl implements SkuService {
         List<Sku> skus = skuDao.selectByExample(query);
         for (Sku sku : skus) {
             sku.setColor(colorDao.selectByPrimaryKey(sku.getColorId()));
+        }
+        return skus;
+    }
+
+    @Override
+    public List<Sku> selectSkuListByProductIdWithStock(Long id) {
+        SkuQuery query=new SkuQuery();
+        SkuQuery.Criteria criteria = query.createCriteria();
+        criteria.andProductIdEqualTo(id);
+        criteria.andStockGreaterThan(0);
+
+        List<Sku> skus = skuDao.selectByExample(query);
+        for (Sku sku : skus) {
+            Color color = colorDao.selectByPrimaryKey(sku.getColorId());
+            sku.setColor(color);
         }
         return skus;
     }

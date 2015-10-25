@@ -5,12 +5,21 @@ import com.pjf.core.bean.product.*;
 import com.pjf.core.dao.product.ImgDao;
 import com.pjf.core.dao.product.ProductDao;
 import com.pjf.core.dao.product.SkuDao;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created by pengjinfei on 2015/10/20.
@@ -28,6 +37,8 @@ public class ProductServiceImpl implements ProductService {
     private SkuDao skuDao;
     @Autowired
     private Jedis jedis;
+    @Autowired
+    private SolrServer solrServer;
 
 
     @Override
@@ -114,5 +125,124 @@ public class ProductServiceImpl implements ProductService {
             }
 
         }
+    }
+
+    @Override
+    public void isShow(Long[] ids) {
+        for (Long id : ids) {
+            Product product=new Product();
+            product.setId(id);
+            product.setIsShow(true);
+            productDao.updateByPrimaryKeySelective(product);
+            product = productDao.selectByPrimaryKey(id);
+            //保存商品搜索信息到solr服务器
+            SolrInputDocument document=new SolrInputDocument();
+            document.setField("id", id);
+            document.setField("name_ik", product.getName());
+            //价格
+            SkuQuery skuQuery = new SkuQuery();
+            skuQuery.createCriteria().andProductIdEqualTo(id);
+            skuQuery.setOrderByClause("price asc");
+            skuQuery.setPageNo(1);
+            skuQuery.setPageSize(1);
+            skuQuery.setFields("price");
+            List<Sku> skus = skuDao.selectByExample(skuQuery);
+            document.setField("price", skus.get(0).getPrice());
+            //图片Url
+            ImgQuery imgQuery = new ImgQuery();
+            imgQuery.createCriteria().andProductIdEqualTo(product.getId()).andIsDefEqualTo(true);
+            List<Img> imgs = imgDao.selectByExample(imgQuery);
+            document.setField("url",imgs.get(0).getUrl());
+            //品牌
+            document.setField("brandId",product.getBrandId());
+            //时间
+            document.setField("last_modified",new Date());
+            try {
+                solrServer.add(document);
+                solrServer.commit();
+            } catch (SolrServerException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public Pagination selectPaginationbyQueryFromSolr(Integer pageNo,String keyword,Long brandId,String price) throws Exception {
+        SolrQuery solrQuery=new SolrQuery();
+        StringBuilder params=new StringBuilder();
+        if (StringUtils.isNotEmpty(keyword)) {
+            solrQuery.set("q", "name_ik:" + keyword);
+            params.append("&keyword=" + keyword);
+        } else {
+            solrQuery.setQuery("*:*");
+        }
+        if (brandId != null) {
+            solrQuery.addFilterQuery("brandId:" + brandId);
+            params.append("&brandId=" + brandId);
+        }
+        if (StringUtils.isNotEmpty(price)) {
+            String[] split = price.split("-");
+            solrQuery.addFilterQuery("price:[" + split[0] + " TO " + split[1] + "]");
+            params.append(("&price=" + price));
+        }
+        solrQuery.setHighlight(true);
+        solrQuery.addHighlightField("name_ik");
+        solrQuery.setHighlightSimplePre("<font style='color:red'>");
+        solrQuery.setHighlightSimplePost("</font>");
+        pageNo = Pagination.cpn(pageNo);
+        int startRow = (pageNo - 1) * Product.PAGESIZE;
+        solrQuery.setStart(startRow);
+        solrQuery.setRows(Product.PAGESIZE);
+        solrQuery.addSort("price", SolrQuery.ORDER.asc);
+        QueryResponse response = solrServer.query(solrQuery);
+        SolrDocumentList results = response.getResults();
+        Pagination pagination=new Pagination(pageNo,Product.PAGESIZE, (int) results.getNumFound());
+        Map<String, Map<String, List<String>>> highlighting = response.getHighlighting();
+        List<Product> products=new ArrayList<>();
+        for (SolrDocument result : results) {
+            Product product=new Product();
+            String id = (String) result.get("id");
+            product.setId(Long.parseLong(id));
+            String name_ik = highlighting.get(id).get("name_ik").get(0);
+            product.setName(name_ik);
+            Sku sku=new Sku();
+            sku.setPrice((Float) result.get("price"));
+            product.setSku(sku);
+            Img img=new Img();
+            img.setUrl((String) result.get("url"));
+            product.setImg(img);
+            product.setBrandId(Long.valueOf((Integer) result.get("brandId")));
+            products.add(product);
+        }
+        pagination.setList(products);
+        String url = "/product/display/list.shtml";
+        pagination.pageView(url, params.toString());
+        return pagination;
+    }
+
+    @Override
+    public List<Brand> selectBrandListFormRedis() {
+        List<Brand> brands=new ArrayList<>();
+        Map<String, String> map = jedis.hgetAll("brand");
+        Set<Map.Entry<String, String>> entries = map.entrySet();
+        for (Map.Entry<String, String> entry : entries) {
+            Brand brand=new Brand();
+            brand.setId(Long.parseLong(entry.getKey()));
+            brand.setName(entry.getValue());
+            brands.add(brand);
+        }
+        return brands;
+    }
+
+    @Override
+    public String selectBrandNameById(Long brandId) {
+        return jedis.hget("brand", String.valueOf(brandId));
+    }
+
+    @Override
+    public Product selectProdutById(Long id) {
+        return productDao.selectByPrimaryKey(id);
     }
 }

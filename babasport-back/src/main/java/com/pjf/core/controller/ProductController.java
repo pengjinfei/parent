@@ -61,4 +61,13 @@ public class ProductController {
         productService.insert(product);
         return "redirect:/product/list.do";
     }
+
+    //上架
+    @RequestMapping(value = "/isShow.do")
+    public String isShow(Long[] ids){
+        //上架 Service
+        productService.isShow(ids);
+
+        return "redirect:/product/list.do";
+    }
 }

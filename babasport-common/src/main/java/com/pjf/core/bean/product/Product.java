@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class Product implements Serializable {
+    public static final int PAGESIZE=8;
     /**
      * ID或商品编号
      */
@@ -107,6 +108,15 @@ public class Product implements Serializable {
      * 默认图片
      */
     private Img img;
+    private Sku sku;
+
+    public Sku getSku() {
+        return sku;
+    }
+
+    public void setSku(Sku sku) {
+        this.sku = sku;
+    }
 
     public Img getImg() {
         return img;

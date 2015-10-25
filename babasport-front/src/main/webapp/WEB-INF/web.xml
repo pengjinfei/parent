@@ -5,4 +5,33 @@
 		  http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
            version="3.0">
 
+    <!-- 编码过滤  POST Request Response -->
+    <filter>
+        <filter-name>encoding</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>encoding</filter-name>
+        <url-pattern>*.do</url-pattern>
+    </filter-mapping>
+    <!-- 配置Springmvc 前端控制器 -->
+    <servlet>
+        <servlet-name>front</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>classpath:springmvc-front.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <!-- / .js.css      /* .jsp拦截    后台*.do    前台*.shtml  单点登陆*.aspx-->
+    <servlet-mapping>
+        <servlet-name>front</servlet-name>
+        <url-pattern>*.shtml</url-pattern>
+    </servlet-mapping>
 </web-app>

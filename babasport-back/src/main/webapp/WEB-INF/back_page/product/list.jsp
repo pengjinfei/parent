@@ -24,6 +24,18 @@
         function changePageNo() {
             $("input[name='pageNo']").val(1);
         }
+        function isShow() {
+            if(Pn.checkedCount('ids')<=0) {
+                alert("请至少选择一个!");
+                return;
+            }
+            if(!confirm("确定上架吗?")) {
+                return;
+            }
+            var f = getTableForm();
+            f.action="/product/isShow.do";
+            f.submit();
+        }
     </script>
 </head>
 <body>
@@ -99,7 +111,7 @@
 	</span>
         </div>
         <div style="margin-top:15px;"><input class="del-button" type="button" value="删除" onclick="optDelete();"/><input
-                class="add" type="button" value="上架" onclick="optDelete();"/><input class="del-button" type="button"
+                class="add" type="button" value="上架" onclick="isShow();"/><input class="del-button" type="button"
                                                                                     value="下架" onclick="optDelete();"/>
         </div>
     </form>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+    <!-- 配置dubbo的服务消费方 -->
+    <!-- 名称 -->
+    <dubbo:application name="babasport-front"/>
+    <!-- 注册中心 -->
+    <dubbo:registry address="N/A"/>
+    <!-- 引用服务提供方 提供接口  -->
+    <!-- 	<dubbo:reference interface="cn.itcast.core.service.TestTbService" id="testTbService"
+            url="dubbo://127.0.0.1:20880"	timeout="600000"
+        /> -->
+    <dubbo:reference interface="com.pjf.core.service.TestTbService" id="testTbService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.BrandService" id="brandService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.UploadService" id="uploadService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.ProductService" id="productService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.TypeService" id="typeService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.ColorService" id="colorService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <dubbo:reference interface="com.pjf.core.service.product.SkuService" id="skuService"
+                     url="dubbo://127.0.0.1:20880"
+            />
+    <!-- 全局设置超时时间 -->  <!-- 不检查服务提供方   问题 ：开发阶段 启动顺序不报错  调用时 必须启动服务提供方 -->
+    <dubbo:consumer timeout="600000" check="false"/>
+
+</beans>

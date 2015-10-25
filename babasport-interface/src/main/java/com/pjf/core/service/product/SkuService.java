@@ -11,4 +11,6 @@ import java.util.List;
 public interface SkuService {
     void update(Sku sku);
     List<Sku> selectByProductId(Long productId);
+
+    List<Sku> selectSkuListByProductIdWithStock(Long id);
 }

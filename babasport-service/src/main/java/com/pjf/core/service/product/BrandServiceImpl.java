@@ -7,6 +7,7 @@ import com.pjf.core.dao.product.BrandDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
@@ -20,6 +21,8 @@ public class BrandServiceImpl implements BrandService {
 
     @Autowired
     private BrandDao brandDao;
+    @Autowired
+    private Jedis jedis;
 
     @Override
     public List<Brand> selectBrandListByQuery(String name, Integer isDisplay) {
@@ -77,6 +80,7 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public void updateBrand(Brand brand) {
+        jedis.hset("brand", brand.getId().toString(), brand.getName());
         brandDao.update(brand);
     }
 }
