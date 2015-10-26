@@ -17,5 +17,7 @@
     <dubbo:service interface="com.pjf.core.service.product.TypeService" ref="typeService"/>
     <dubbo:service interface="com.pjf.core.service.product.ColorService" ref="colorService"/>
     <dubbo:service interface="com.pjf.core.service.product.SkuService" ref="skuService"/>
+    <dubbo:service interface="com.pjf.core.service.user.SessionProvider" ref="sessionProvider"/>
+    <dubbo:service interface="com.pjf.core.service.user.BuyerService" ref="buyerService"/>
 
 </beans>

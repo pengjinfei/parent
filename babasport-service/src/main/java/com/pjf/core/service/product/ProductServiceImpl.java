@@ -5,6 +5,7 @@ import com.pjf.core.bean.product.*;
 import com.pjf.core.dao.product.ImgDao;
 import com.pjf.core.dao.product.ProductDao;
 import com.pjf.core.dao.product.SkuDao;
+import com.pjf.core.service.staticpage.StaticPageServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -14,6 +15,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
@@ -39,6 +41,12 @@ public class ProductServiceImpl implements ProductService {
     private Jedis jedis;
     @Autowired
     private SolrServer solrServer;
+
+    @Qualifier("skuService")
+    @Autowired
+    private SkuService skuService;
+    @Autowired
+    private StaticPageServiceImpl pageService;
 
 
     @Override
@@ -165,6 +173,20 @@ public class ProductServiceImpl implements ProductService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            Map<String, Object> root = new HashMap<String,Object>();
+            Product staticProduct =selectProdutById(id);
+            root.put("product", staticProduct);
+
+            List<Sku> staticSkus = skuService.selectSkuListByProductIdWithStock(id);
+            root.put("skus", staticSkus);
+
+            Set<Color> colors = new HashSet<>();
+            for (Sku sku : staticSkus) {
+                colors.add(sku.getColor());
+            }
+            root.put("colors", colors);
+            pageService.index(root,id);
         }
     }
 
@@ -243,6 +265,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product selectProdutById(Long id) {
-        return productDao.selectByPrimaryKey(id);
+        Product product = productDao.selectByPrimaryKey(id);
+        ImgQuery query=new ImgQuery();
+        query.createCriteria().andProductIdEqualTo(id).andIsDefEqualTo(true);
+        Img img = imgDao.selectByExample(query).get(0);
+        product.setImg(img);
+        return product;
     }
 }
